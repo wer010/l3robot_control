@@ -41,8 +41,8 @@ class MyLabel(QLabel):
 
 
 class mywindow(QMainWindow, ui.Ui_Dialog):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(mywindow,self).__init__(parent)
         self.setupUi(self)
     #
 
