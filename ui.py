@@ -9,10 +9,12 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt,QRect,pyqtSignal,QCoreApplication
 from PyQt5.QtWidgets import QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
-import numpy as np
 import excel_read
+import cmd_send
+import queue
 
 class Ui_Dialog(object):
+    q = queue.Queue(0)
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(800, 600)
@@ -66,12 +68,14 @@ class Ui_Dialog(object):
         sizePolicy.setHeightForWidth(self.lineEdit_ipaddress.sizePolicy().hasHeightForWidth())
         self.lineEdit_ipaddress.setSizePolicy(sizePolicy)
         self.lineEdit_ipaddress.setObjectName("lineEdit_ipaddress")
+        self.lineEdit_ipaddress.setText("127.0.0.1")
         self.gridLayout.addWidget(self.lineEdit_ipaddress, 0, 1, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.groupBox)
         self.label_4.setObjectName("label_4")
         self.gridLayout.addWidget(self.label_4, 1, 0, 1, 1)
         self.lineEdit_Aheight = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_Aheight.setObjectName("lineEdit_Aheight")
+        self.lineEdit_Aheight.setText('0')
         self.gridLayout.addWidget(self.lineEdit_Aheight, 1, 1, 1, 1)
         self.label = QtWidgets.QLabel(self.groupBox)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -96,12 +100,14 @@ class Ui_Dialog(object):
         sizePolicy.setHeightForWidth(self.lineEdit.sizePolicy().hasHeightForWidth())
         self.lineEdit.setSizePolicy(sizePolicy)
         self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setText('2000')
         self.gridLayout.addWidget(self.lineEdit, 0, 3, 1, 1)
         self.label_5 = QtWidgets.QLabel(self.groupBox)
         self.label_5.setObjectName("label_5")
         self.gridLayout.addWidget(self.label_5, 1, 2, 1, 1)
         self.lineEdit_Bheight = QtWidgets.QLineEdit(self.groupBox)
         self.lineEdit_Bheight.setObjectName("lineEdit_Bheight")
+        self.lineEdit_Bheight.setText('0')
         self.gridLayout.addWidget(self.lineEdit_Bheight, 1, 3, 1, 1)
         self.verticalLayout.addWidget(self.groupBox)
         self.label_2 = QtWidgets.QLabel(Dialog)
@@ -127,6 +133,8 @@ class Ui_Dialog(object):
         self.pushButton_exit.clicked.connect(QCoreApplication.quit)
         self.pushButton_loadA.clicked.connect(self.loadFileA)
         self.pushButton_loadB.clicked.connect(self.loadFileB)
+        self.pushButton_connect.clicked.connect(self.connect2controller)
+        self.pushButton_start.clicked.connect(self.begin)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -168,6 +176,27 @@ class Ui_Dialog(object):
         for i in range(n):
             self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
             self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
+
+    def connect2controller(self):
+        ip = self.lineEdit_ipaddress.text()
+        port = self.lineEdit.text()
+        self.client = cmd_send.client_thread(self.q, ip, port)
+        self.client.start()
+        self.client.recv_msg.connect(self.msgrecv)
+
+
+    def msgrecv(self,s):
+        self.label_status.setText(s)
+
+    def begin(self):
+        # for i in range(self.tableView.rowCount()):
+        for i in range(2):
+            a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i,0).text(),self.tableView.item(i,1).text(),
+                                                     self.lineEdit_Aheight.text(),'0',
+                                                     self.tableView.item(i, 2).text(),self.tableView.item(i,3).text(),
+                                                     self.lineEdit_Aheight.text(), '0')
+            self.q.put(a)
+        self.label_status.setText('All Done')
 
     def init_table(self):
         self.tableView.setColumnCount(5)
