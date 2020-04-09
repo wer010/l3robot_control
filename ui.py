@@ -8,7 +8,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt,QRect,pyqtSignal,QCoreApplication
-from PyQt5.QtWidgets import QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
+from PyQt5.QtWidgets import QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
+import numpy as np
+import excel_read
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -108,7 +110,7 @@ class Ui_Dialog(object):
         self.label_status = QtWidgets.QLabel(Dialog)
         self.label_status.setObjectName("label_status")
         self.verticalLayout.addWidget(self.label_status)
-        self.tableView = QtWidgets.QTableView(Dialog)
+        self.tableView = QtWidgets.QTableWidget(Dialog)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
@@ -117,12 +119,14 @@ class Ui_Dialog(object):
         self.tableView.setObjectName("tableView")
         self.verticalLayout.addWidget(self.tableView)
         self.horizontalLayout.addLayout(self.verticalLayout)
+        self.init_table()
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
         self.pushButton_exit.clicked.connect(QCoreApplication.quit)
-        self.pushButton_loadA.clicked.connect(self.loadFile)
+        self.pushButton_loadA.clicked.connect(self.loadFileA)
+        self.pushButton_loadB.clicked.connect(self.loadFileB)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -141,6 +145,37 @@ class Ui_Dialog(object):
         self.label_2.setText(_translate("Dialog", "当前位置信息"))
         self.label_status.setText(_translate("Dialog", "TextLabel"))
 
-    def loadFile(self):
+    def loadFileA(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
+        positiona = excel_read.read_excel(file_name)
+        n = positiona.shape[0]
+        self.tableView.setRowCount(n)
+        for i in range(n):
+            self.tableView.setItem(i, 0, QTableWidgetItem(str(positiona[i, 0])))
+            self.tableView.setItem(i, 1, QTableWidgetItem(str(positiona[i, 1])))
+
+
+
+
+    def loadFileB(self):
+        file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
+        self.label_status.setText(file_name)
+        positionb = excel_read.read_excel(file_name)
+        n = positionb.shape[0]
+        if self.tableView.rowCount()<n:
+            self.tableView.setRowCount(n)
+        for i in range(n):
+            self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
+            self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
+
+    def init_table(self):
+        self.tableView.setColumnCount(5)
+        self.tableView.setColumnWidth(0,120)
+        self.tableView.setColumnWidth(1,120)
+        self.tableView.setColumnWidth(2,120)
+        self.tableView.setColumnWidth(3,120)
+
+        self.tableView.setHorizontalHeaderLabels(['AX坐标','AY坐标','BX坐标','BY坐标','状态'])
+
+
