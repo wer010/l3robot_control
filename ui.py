@@ -188,6 +188,7 @@ class Ui_Dialog(object):
     def msgrecv(self,s):
         self.label_status.setText(s)
 
+#TODO:全做完了才能显示all done
     def begin(self):
         # for i in range(self.tableView.rowCount()):
         for i in range(2):
