@@ -8,14 +8,16 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt,QRect,pyqtSignal,QCoreApplication
-from PyQt5.QtWidgets import QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
+from PyQt5.QtWidgets import QMessageBox,QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
 import excel_read
 import cmd_send
 import queue
 
 class Ui_Dialog(object):
     q = queue.Queue(0)
+
     def setupUi(self, Dialog):
+        self.isPause = False
         Dialog.setObjectName("Dialog")
         Dialog.resize(800, 600)
         mainwindow = QtWidgets.QWidget()
@@ -45,6 +47,9 @@ class Ui_Dialog(object):
         self.pushButton_start = QtWidgets.QPushButton(self.Groupbox)
         self.pushButton_start.setObjectName("pushButton_start")
         self.verticalLayout_4.addWidget(self.pushButton_start)
+        self.pushButton_pause = QtWidgets.QPushButton(self.Groupbox)
+        self.pushButton_pause.setObjectName("pushButton_pause")
+        self.verticalLayout_4.addWidget(self.pushButton_pause)
         self.pushButton_exit = QtWidgets.QPushButton(self.Groupbox)
         self.pushButton_exit.setObjectName("pushButton_exit")
         self.verticalLayout_4.addWidget(self.pushButton_exit)
@@ -135,6 +140,8 @@ class Ui_Dialog(object):
         self.pushButton_loadB.clicked.connect(self.loadFileB)
         self.pushButton_connect.clicked.connect(self.connect2controller)
         self.pushButton_start.clicked.connect(self.begin)
+        self.pushButton_pause.clicked.connect(self.pause)
+
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -144,6 +151,7 @@ class Ui_Dialog(object):
         self.pushButton_loadB.setText(_translate("Dialog", "载入贴装位置"))
         self.pushButton_connect.setText(_translate("Dialog", "连接"))
         self.pushButton_start.setText(_translate("Dialog", "开始"))
+        self.pushButton_pause.setText(_translate("Dialog", "暂停"))
         self.pushButton_exit.setText(_translate("Dialog", "退出"))
         self.groupBox.setTitle(_translate("Dialog", "GroupBox"))
         self.label_4.setText(_translate("Dialog", "元件高度"))
@@ -157,9 +165,9 @@ class Ui_Dialog(object):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
         positiona = excel_read.read_excel(file_name)
-        n = positiona.shape[0]
-        self.tableView.setRowCount(n)
-        for i in range(n):
+        self.counta = positiona.shape[0]
+        self.tableView.setRowCount(self.counta)
+        for i in range(self.counta):
             self.tableView.setItem(i, 0, QTableWidgetItem(str(positiona[i, 0])))
             self.tableView.setItem(i, 1, QTableWidgetItem(str(positiona[i, 1])))
 
@@ -170,10 +178,10 @@ class Ui_Dialog(object):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
         positionb = excel_read.read_excel(file_name)
-        n = positionb.shape[0]
-        if self.tableView.rowCount()<n:
-            self.tableView.setRowCount(n)
-        for i in range(n):
+        self.countb = positionb.shape[0]
+        if self.tableView.rowCount()<self.countb:
+            self.tableView.setRowCount(self.countb)
+        for i in range(self.countb):
             self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
             self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
 
@@ -181,23 +189,53 @@ class Ui_Dialog(object):
         ip = self.lineEdit_ipaddress.text()
         port = self.lineEdit.text()
         self.client = cmd_send.client_thread(self.q, ip, port)
-        self.client.start()
-        self.client.recv_msg.connect(self.msgrecv)
+
+    def pause(self):
+        if self.isPause == True:
+            self.isPause = False
+            self.pushButton_pause.setText('暂停')
+            if hasattr(self, 'i'):
+                self.msgrecv('Get OK\n')
+        else:
+            self.isPause = True
+            self.pushButton_pause.setText('恢复')
+
 
 
     def msgrecv(self,s):
         self.label_status.setText(s)
+        if s=='Get OK\n':
+            self.tableView.setItem(self.i, 4, QTableWidgetItem('OK'))
+            if self.isPause != True:
+                self.i  = self.i + 1
+                if self.i < min(self.counta, self.countb):
+                    a = self.msg_init(self.i)
+                    self.q.put(a)
+                else:
+                    self.label_status.setText('All Done')
 
-#TODO:全做完了才能显示all done
-    def begin(self):
-        # for i in range(self.tableView.rowCount()):
-        for i in range(2):
-            a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i,0).text(),self.tableView.item(i,1).text(),
-                                                     self.lineEdit_Aheight.text(),'0',
-                                                     self.tableView.item(i, 2).text(),self.tableView.item(i,3).text(),
-                                                     self.lineEdit_Aheight.text(), '0')
+
+
+
+    def begin(self):        #开始往队列里加消息，子线程收到消息就传到下位机
+        if hasattr(self,'client'):
+            self.client.start()
+            self.client.recv_msg.connect(self.msgrecv)
+            self.i = 0
+            a = self.msg_init(self.i)
             self.q.put(a)
-        self.label_status.setText('All Done')
+        else:
+            self.showdialog("Connect to device first")
+
+
+    def msg_init(self,i):
+        a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i, 0).text(),
+                                                 self.tableView.item(i, 1).text(),
+                                                 self.lineEdit_Aheight.text(), '0',
+                                                 self.tableView.item(i, 2).text(),
+                                                 self.tableView.item(i, 3).text(),
+                                                 self.lineEdit_Aheight.text(), '0')
+        return a
 
     def init_table(self):
         self.tableView.setColumnCount(5)
@@ -209,3 +247,11 @@ class Ui_Dialog(object):
         self.tableView.setHorizontalHeaderLabels(['AX坐标','AY坐标','BX坐标','BY坐标','状态'])
 
 
+    def showdialog(self, t):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+
+        msg.setText(t)
+        msg.setWindowTitle("MessageBox")
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        msg.exec_()

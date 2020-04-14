@@ -21,6 +21,7 @@ class client_thread(QThread):
                 time.sleep(0.2)
             except socket.error:
                 print('fail to setup socket connection')
+                self.recv_msg.emit('error')
                 break
         pass
 
