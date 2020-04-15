@@ -1,7 +1,7 @@
 import socket
 import time
 from PyQt5.QtCore import QThread, pyqtSignal
-
+#TODO: 设计消息队列用于主线程与子线程之间的通信
 class client_thread(QThread):
     recv_msg = pyqtSignal(str)
     def __init__(self, q,server_ip, server_port):
@@ -14,7 +14,7 @@ class client_thread(QThread):
     def run(self):
         while True:
             try:
-                cmd = self.q.get()
+                cmd = self.q.get()+'\r\n'
                 self.s.send(cmd.encode())
                 a = self.s.recv(1024).decode()
                 self.recv_msg.emit(a)

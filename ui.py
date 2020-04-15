@@ -195,7 +195,7 @@ class Ui_Dialog(object):
             self.isPause = False
             self.pushButton_pause.setText('暂停')
             if hasattr(self, 'i'):
-                self.msgrecv('Get OK\n')
+                self.msgrecv('Get OK')
         else:
             self.isPause = True
             self.pushButton_pause.setText('恢复')
@@ -204,7 +204,7 @@ class Ui_Dialog(object):
 
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Get OK\n':
+        if s=='Get OK':
             self.tableView.setItem(self.i, 4, QTableWidgetItem('OK'))
             if self.isPause != True:
                 self.i  = self.i + 1
@@ -213,6 +213,7 @@ class Ui_Dialog(object):
                     self.q.put(a)
                 else:
                     self.label_status.setText('All Done')
+
 
 
 
