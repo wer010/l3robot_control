@@ -201,7 +201,7 @@ class Ui_Dialog(object):
             self.pushButton_pause.setText('恢复')
 
 
-
+#TODO :要让暂停功能更稳定一些，这里应该多设置几条信息类型
     def msgrecv(self,s):
         self.label_status.setText(s)
         if s=='Get OK':
