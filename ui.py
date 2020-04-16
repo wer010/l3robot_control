@@ -73,7 +73,7 @@ class Ui_Dialog(object):
         sizePolicy.setHeightForWidth(self.lineEdit_ipaddress.sizePolicy().hasHeightForWidth())
         self.lineEdit_ipaddress.setSizePolicy(sizePolicy)
         self.lineEdit_ipaddress.setObjectName("lineEdit_ipaddress")
-        self.lineEdit_ipaddress.setText("127.0.0.1")
+        self.lineEdit_ipaddress.setText("192.168.0.1")
         self.gridLayout.addWidget(self.lineEdit_ipaddress, 0, 1, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.groupBox)
         self.label_4.setObjectName("label_4")
@@ -195,7 +195,7 @@ class Ui_Dialog(object):
             self.isPause = False
             self.pushButton_pause.setText('暂停')
             if hasattr(self, 'i'):
-                self.msgrecv('Get OK')
+                self.msgrecv('Put OK\r\n')
         else:
             self.isPause = True
             self.pushButton_pause.setText('恢复')
@@ -204,7 +204,7 @@ class Ui_Dialog(object):
 #TODO :要让暂停功能更稳定一些，这里应该多设置几条信息类型
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Get OK':
+        if s=='Put OK\r\n':
             self.tableView.setItem(self.i, 4, QTableWidgetItem('OK'))
             if self.isPause != True:
                 self.i  = self.i + 1
@@ -235,7 +235,7 @@ class Ui_Dialog(object):
                                                  self.lineEdit_Aheight.text(), '0',
                                                  self.tableView.item(i, 2).text(),
                                                  self.tableView.item(i, 3).text(),
-                                                 self.lineEdit_Aheight.text(), '0')
+                                                 self.lineEdit_Bheight.text(), '0')
         return a
 
     def init_table(self):
