@@ -212,6 +212,7 @@ class Ui_Dialog(object):
                     a = self.msg_init(self.i)
                     self.q.put(a)
                 else:
+                    self.q.put('HOME')
                     self.label_status.setText('All Done')
 
 
