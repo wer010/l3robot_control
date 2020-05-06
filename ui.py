@@ -231,11 +231,14 @@ class Ui_Dialog(object):
                 self.msgsend(0)
             else:
                 self.tableView.setItem(self.tableView.rowCount() - 1, 1,
-                                       QTableWidgetItem('Current done number {}'.format(int(self.i+1))))
+                                       QTableWidgetItem('Current done number {}'.format(int(self.i))))
                 self.msgsend(1)
         elif self.i == min(self.counta, self.countb):
             if self.combobox.currentIndex()==0:
                 self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+            else:
+                self.tableView.setItem(self.tableView.rowCount() - 1, 1,
+                                       QTableWidgetItem('Current done number {}'.format(int(self.i))))
             self.msgsend(-1)
             self.label_status.setText('All Done')
 
@@ -289,6 +292,7 @@ class Ui_Dialog(object):
                 self.msgsend(0)
             else:
                 self.msgsend(2)
+                self.msgsend(1)
         else:
             self.showdialog("Connect to device first")
 
