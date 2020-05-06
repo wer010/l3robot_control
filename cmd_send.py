@@ -9,12 +9,14 @@ class client_thread(QThread):
         self.q = q
         self.server_ip = server_ip
         self.server_port = server_port
-        self.s = inisock(self.server_ip, self.server_port)
 
     def run(self):
+        self.s = inisock(self.server_ip, self.server_port)
         while True:
             try:
                 cmd = self.q.get()+'\r\n'
+                if cmd == 'QUIT':
+                    break
                 self.s.send(cmd.encode())
                 a = self.s.recv(1024).decode()
                 self.recv_msg.emit(a)

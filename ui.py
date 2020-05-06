@@ -240,6 +240,7 @@ class Ui_Dialog(object):
                 self.tableView.setItem(self.tableView.rowCount() - 1, 1,
                                        QTableWidgetItem('Current done number {}'.format(int(self.i))))
             self.msgsend(-1)
+            self.msgsend(99)
             self.label_status.setText('All Done')
 
 
@@ -276,6 +277,8 @@ class Ui_Dialog(object):
                                                                self.tableView.item(4, 2).text(),
                                                                self.tableView.item(4, 3).text())
 
+            elif s==99:
+                a= 'QUIT'
             else:
                 self.showdialog("Error Msg")
             self.q.put(a)
