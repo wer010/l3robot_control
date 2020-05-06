@@ -8,13 +8,14 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt,QRect,pyqtSignal,QCoreApplication
-from PyQt5.QtWidgets import QMessageBox,QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
+from PyQt5.QtWidgets import QComboBox,QMessageBox,QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
 import excel_read
 import cmd_send
 import queue
 
 class Ui_Dialog(object):
     q = queue.Queue(0)
+    i = 0
 
     def setupUi(self, Dialog):
         self.isPause = False
@@ -114,6 +115,12 @@ class Ui_Dialog(object):
         self.lineEdit_Bheight.setObjectName("lineEdit_Bheight")
         self.lineEdit_Bheight.setText('0')
         self.gridLayout.addWidget(self.lineEdit_Bheight, 1, 3, 1, 1)
+        self.label_cb = QtWidgets.QLabel(self.groupBox)
+        self.label_cb.setText('加载模式')
+        self.gridLayout.addWidget(self.label_cb)
+        self.combobox = QComboBox(self.groupBox)
+        self.combobox.addItems(['坐标模式','托盘模式'])
+        self.gridLayout.addWidget(self.combobox)
         self.verticalLayout.addWidget(self.groupBox)
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
@@ -130,7 +137,7 @@ class Ui_Dialog(object):
         self.tableView.setObjectName("tableView")
         self.verticalLayout.addWidget(self.tableView)
         self.horizontalLayout.addLayout(self.verticalLayout)
-        self.init_table()
+        self.init_table(self.combobox.currentIndex())
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -141,7 +148,7 @@ class Ui_Dialog(object):
         self.pushButton_connect.clicked.connect(self.connect2controller)
         self.pushButton_start.clicked.connect(self.begin)
         self.pushButton_pause.clicked.connect(self.pause)
-
+        self.combobox.currentIndexChanged.connect(self.init_table)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -164,12 +171,19 @@ class Ui_Dialog(object):
     def loadFileA(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
-        positiona = excel_read.read_excel(file_name)
-        self.counta = positiona.shape[0]
-        self.tableView.setRowCount(self.counta)
-        for i in range(self.counta):
-            self.tableView.setItem(i, 0, QTableWidgetItem(str(positiona[i, 0])))
-            self.tableView.setItem(i, 1, QTableWidgetItem(str(positiona[i, 1])))
+        if file_name != '':
+            positiona = excel_read.read_excel(file_name)
+            self.counta = positiona.shape[0]
+            self.tableView.setRowCount(self.counta)
+            for i in range(self.counta):
+                self.tableView.setItem(i, 0, QTableWidgetItem(str(positiona[i, 0])))
+                self.tableView.setItem(i, 1, QTableWidgetItem(str(positiona[i, 1])))
+            if self.combobox.currentIndex()==1:
+                self.tableView.insertRow(self.counta)
+                self.counta = int(positiona[-1,0])*int(positiona[-1,1])
+                self.tableView.setItem(self.tableView.rowCount()-1,0,QTableWidgetItem('Total number {}'.format(self.counta)))
+                self.tableView.setItem(self.tableView.rowCount()-1,1,QTableWidgetItem('Current done number {}'.format(int(self.i))))
+
 
 
 
@@ -177,13 +191,20 @@ class Ui_Dialog(object):
     def loadFileB(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
-        positionb = excel_read.read_excel(file_name)
-        self.countb = positionb.shape[0]
-        if self.tableView.rowCount()<self.countb:
-            self.tableView.setRowCount(self.countb)
-        for i in range(self.countb):
-            self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
-            self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
+        if file_name != '':
+            positionb = excel_read.read_excel(file_name)
+            self.countb = positionb.shape[0]
+            if self.tableView.rowCount()<self.countb:
+                self.tableView.setRowCount(self.countb)
+            for i in range(self.countb):
+                self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
+                self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
+            if self.combobox.currentIndex()==1:
+                self.countb = int(positionb[-1,0])*int(positionb[-1,1])
+                self.tableView.setItem(self.tableView.rowCount()-1,2,QTableWidgetItem('Total number {}'.format(self.countb)))
+                self.tableView.setItem(self.tableView.rowCount()-1,3,QTableWidgetItem('Current done number {}'.format(int(self.i))))
+
+
 
     def connect2controller(self):
         ip = self.lineEdit_ipaddress.text()
@@ -201,20 +222,60 @@ class Ui_Dialog(object):
             self.pushButton_pause.setText('恢复')
 
 
-#TODO :要让暂停功能更稳定一些，这里应该多设置几条信息类型
+    # 子线程消息接收处理
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Put OK\r\n':
-            self.tableView.setItem(self.i, 4, QTableWidgetItem('OK'))
-            if self.isPause != True:
-                self.i  = self.i + 1
-                if self.i < min(self.counta, self.countb):
-                    a = self.msg_init(self.i)
-                    self.q.put(a)
-                else:
-                    self.q.put('HOME')
-                    self.label_status.setText('All Done')
+        if s=='Ready\n' and self.i < min(self.counta, self.countb):
+            if self.combobox.currentIndex()==0:
+                self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+                self.msgsend(0)
+            else:
+                self.tableView.setItem(self.tableView.rowCount() - 1, 1,
+                                       QTableWidgetItem('Current done number {}'.format(int(self.i+1))))
+                self.msgsend(1)
+        elif self.i == min(self.counta, self.countb):
+            if self.combobox.currentIndex()==0:
+                self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+            self.msgsend(-1)
+            self.label_status.setText('All Done')
 
+
+    def msgsend(self,s):
+        if self.isPause != True:
+            if s==-1:
+                a = 'HOME'
+            elif s==0:        #位置模式
+                a = self.posmsg_init(self.i)
+                self.i = self.i + 1
+            elif s==1:      #托盘模式
+                a = self.pltmsg_init(self.i+1)
+                self.i = self.i + 1
+            elif s==2:      #托盘初始化
+                a = 'PLT {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
+                                                               self.tableView.item(0, 1).text(),
+                                                               self.tableView.item(1, 0).text(),
+                                                               self.tableView.item(1, 1).text(),
+                                                               self.tableView.item(2, 0).text(),
+                                                               self.tableView.item(2, 1).text(),
+                                                               self.tableView.item(3, 0).text(),
+                                                               self.tableView.item(3, 1).text(),
+                                                               self.tableView.item(4, 0).text(),
+                                                               self.tableView.item(4, 1).text())
+                self.q.put(a)
+                a = 'PLT {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
+                                                               self.tableView.item(0, 3).text(),
+                                                               self.tableView.item(1, 2).text(),
+                                                               self.tableView.item(1, 3).text(),
+                                                               self.tableView.item(2, 2).text(),
+                                                               self.tableView.item(2, 3).text(),
+                                                               self.tableView.item(3, 2).text(),
+                                                               self.tableView.item(3, 3).text(),
+                                                               self.tableView.item(4, 2).text(),
+                                                               self.tableView.item(4, 3).text())
+
+            else:
+                self.showdialog("Error Msg")
+            self.q.put(a)
 
 
 
@@ -224,13 +285,15 @@ class Ui_Dialog(object):
             self.client.start()
             self.client.recv_msg.connect(self.msgrecv)
             self.i = 0
-            a = self.msg_init(self.i)
-            self.q.put(a)
+            if self.combobox.currentIndex()==0:
+                self.msgsend(0)
+            else:
+                self.msgsend(2)
         else:
             self.showdialog("Connect to device first")
 
 
-    def msg_init(self,i):
+    def posmsg_init(self,i):
         a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i, 0).text(),
                                                  self.tableView.item(i, 1).text(),
                                                  self.lineEdit_Aheight.text(), '0',
@@ -239,14 +302,27 @@ class Ui_Dialog(object):
                                                  self.lineEdit_Bheight.text(), '0')
         return a
 
-    def init_table(self):
-        self.tableView.setColumnCount(5)
-        self.tableView.setColumnWidth(0,120)
-        self.tableView.setColumnWidth(1,120)
-        self.tableView.setColumnWidth(2,120)
-        self.tableView.setColumnWidth(3,120)
+    def pltmsg_init(self,i):
+        a = 'PLT {} {} {}'.format(i, self.lineEdit_Aheight.text(), self.lineEdit_Bheight.text())
+        return a
 
-        self.tableView.setHorizontalHeaderLabels(['AX坐标','AY坐标','BX坐标','BY坐标','状态'])
+    def init_table(self,flag):
+        self.tableView.clear()
+        self.tableView.setRowCount(0)
+        if flag==0:
+            self.tableView.setColumnCount(5)
+            self.tableView.setColumnWidth(0,120)
+            self.tableView.setColumnWidth(1,120)
+            self.tableView.setColumnWidth(2,120)
+            self.tableView.setColumnWidth(3,120)
+            self.tableView.setHorizontalHeaderLabels(['AX坐标','AY坐标','BX坐标','BY坐标','状态'])
+        else:
+            self.tableView.setColumnCount(4)
+            self.tableView.setColumnWidth(0, 150)
+            self.tableView.setColumnWidth(1, 150)
+            self.tableView.setColumnWidth(2, 150)
+            self.tableView.setColumnWidth(3, 150)
+            self.tableView.setHorizontalHeaderLabels(['AX坐标', 'AY坐标', 'BX坐标', 'BY坐标'])
 
 
     def showdialog(self, t):
