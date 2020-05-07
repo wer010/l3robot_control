@@ -225,7 +225,7 @@ class Ui_Dialog(object):
     # 子线程消息接收处理
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Ready\n' and self.i < min(self.counta, self.countb):
+        if s=='Put OK\r\n' and self.i < min(self.counta, self.countb):
             if self.combobox.currentIndex()==0:
                 self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
                 self.msgsend(0)
@@ -278,7 +278,7 @@ class Ui_Dialog(object):
                                                                self.tableView.item(4, 3).text())
 
             elif s==99:
-                a= 'QUIT'
+                a = 'QUIT'
             else:
                 self.showdialog("Error Msg")
             self.q.put(a)
