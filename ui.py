@@ -255,7 +255,7 @@ class Ui_Dialog(object):
                 a = self.pltmsg_init(self.i+1)
                 self.i = self.i + 1
             elif s==2:      #托盘初始化
-                a = 'PLT {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
+                a = 'Pallet1 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
                                                                self.tableView.item(0, 1).text(),
                                                                self.tableView.item(1, 0).text(),
                                                                self.tableView.item(1, 1).text(),
@@ -266,7 +266,7 @@ class Ui_Dialog(object):
                                                                self.tableView.item(4, 0).text(),
                                                                self.tableView.item(4, 1).text())
                 self.q.put(a)
-                a = 'PLT {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
+                a = 'Pallet2 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
                                                                self.tableView.item(0, 3).text(),
                                                                self.tableView.item(1, 2).text(),
                                                                self.tableView.item(1, 3).text(),
