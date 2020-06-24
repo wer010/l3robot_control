@@ -8,7 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt,QRect,pyqtSignal,QCoreApplication
-from PyQt5.QtWidgets import QComboBox,QMessageBox,QTableWidgetItem,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
+from PyQt5.QtWidgets import QComboBox,QMessageBox,QTableWidgetItem,QCheckBox,QMainWindow,QLineEdit,QSlider,QGroupBox,QPushButton, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel
 import excel_read
 import cmd_send
 import queue
@@ -72,6 +72,8 @@ class Ui_Dialog(object):
         sizePolicy.setHorizontalStretch(5)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.lineEdit_ipaddress.sizePolicy().hasHeightForWidth())
+
+        ###################grid view start
         self.lineEdit_ipaddress.setSizePolicy(sizePolicy)
         self.lineEdit_ipaddress.setObjectName("lineEdit_ipaddress")
         self.lineEdit_ipaddress.setText("192.168.0.1")
@@ -121,6 +123,14 @@ class Ui_Dialog(object):
         self.combobox = QComboBox(self.groupBox)
         self.combobox.addItems(['坐标模式','托盘模式'])
         self.gridLayout.addWidget(self.combobox)
+
+        self.checkbox_gotoc = QCheckBox('蘸胶工序',self.groupBox)
+        self.gridLayout.addWidget(self.checkbox_gotoc)
+
+        self.lineEdit_cpos = QLineEdit(self.groupBox)
+        self.gridLayout.addWidget(self.lineEdit_cpos)
+        # ##################grid view end
+
         self.verticalLayout.addWidget(self.groupBox)
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
@@ -149,6 +159,7 @@ class Ui_Dialog(object):
         self.pushButton_start.clicked.connect(self.begin)
         self.pushButton_pause.clicked.connect(self.pause)
         self.combobox.currentIndexChanged.connect(self.init_table)
+        self.checkbox_gotoc.stateChanged.connect(self.changecb1)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -167,6 +178,11 @@ class Ui_Dialog(object):
         self.label_5.setText(_translate("Dialog", "贴装高度"))
         self.label_2.setText(_translate("Dialog", "当前位置信息"))
         self.label_status.setText(_translate("Dialog", "TextLabel"))
+        self.checkbox_gotoc.setChecked(True)
+
+    def changecb1(self):
+        self.lineEdit_cpos.setEnabled(self.checkbox_gotoc.isChecked())
+
 
     def loadFileA(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
@@ -277,6 +293,8 @@ class Ui_Dialog(object):
                                                                self.tableView.item(4, 2).text(),
                                                                self.tableView.item(4, 3).text())
 
+            elif s==3:
+                a='CPOS '+ self.lineEdit_cpos.text()
             elif s==99:
                 a = 'QUIT'
             else:
@@ -290,6 +308,8 @@ class Ui_Dialog(object):
         if hasattr(self,'client'):
             self.client.start()
             self.client.recv_msg.connect(self.msgrecv)
+            if self.checkbox_gotoc.isChecked() and self.lineEdit_cpos.text() != None:
+                self.msgsend(3)
             self.i = 0
             if self.combobox.currentIndex()==0:
                 self.msgsend(0)
