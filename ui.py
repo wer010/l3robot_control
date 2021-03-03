@@ -194,6 +194,8 @@ class Ui_Dialog(object):
             for i in range(self.counta):
                 self.tableView.setItem(i, 0, QTableWidgetItem(str(positiona[i, 0])))
                 self.tableView.setItem(i, 1, QTableWidgetItem(str(positiona[i, 1])))
+                self.tableView.setItem(i, 2, QTableWidgetItem(str(positiona[i, 2])))
+                self.tableView.setItem(i, 3, QTableWidgetItem(str(positiona[i, 3])))
             if self.combobox.currentIndex()==1:
                 self.tableView.insertRow(self.counta)
                 self.counta = int(positiona[-1,0])*int(positiona[-1,1])
@@ -213,8 +215,10 @@ class Ui_Dialog(object):
             if self.tableView.rowCount()<self.countb:
                 self.tableView.setRowCount(self.countb)
             for i in range(self.countb):
-                self.tableView.setItem(i, 2, QTableWidgetItem(str(positionb[i, 0])))
-                self.tableView.setItem(i, 3, QTableWidgetItem(str(positionb[i, 1])))
+                self.tableView.setItem(i, 4, QTableWidgetItem(str(positionb[i, 0])))
+                self.tableView.setItem(i, 5, QTableWidgetItem(str(positionb[i, 1])))
+                self.tableView.setItem(i, 6, QTableWidgetItem(str(positionb[i, 2])))
+                self.tableView.setItem(i, 7, QTableWidgetItem(str(positionb[i, 3])))
             if self.combobox.currentIndex()==1:
                 self.countb = int(positionb[-1,0])*int(positionb[-1,1])
                 self.tableView.setItem(self.tableView.rowCount()-1,2,QTableWidgetItem('Total number {}'.format(self.countb)))
@@ -323,10 +327,12 @@ class Ui_Dialog(object):
     def posmsg_init(self,i):
         a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i, 0).text(),
                                                  self.tableView.item(i, 1).text(),
-                                                 self.lineEdit_Aheight.text(), '0',
                                                  self.tableView.item(i, 2).text(),
                                                  self.tableView.item(i, 3).text(),
-                                                 self.lineEdit_Bheight.text(), '0')
+                                                 self.tableView.item(i, 4).text(),
+                                                 self.tableView.item(i, 5).text(),
+                                                 self.tableView.item(i, 6).text(),
+                                                 self.tableView.item(i, 7).text())
         return a
 
     def pltmsg_init(self,i):
@@ -337,19 +343,19 @@ class Ui_Dialog(object):
         self.tableView.clear()
         self.tableView.setRowCount(0)
         if flag==0:
-            self.tableView.setColumnCount(5)
-            self.tableView.setColumnWidth(0,120)
-            self.tableView.setColumnWidth(1,120)
-            self.tableView.setColumnWidth(2,120)
-            self.tableView.setColumnWidth(3,120)
-            self.tableView.setHorizontalHeaderLabels(['AX坐标','AY坐标','BX坐标','BY坐标','状态'])
+            self.tableView.setColumnCount(9)
+            # self.tableView.setColumnWidth(0,120)
+            # self.tableView.setColumnWidth(1,120)
+            # self.tableView.setColumnWidth(2,120)
+            # self.tableView.setColumnWidth(3,120)
+            self.tableView.setHorizontalHeaderLabels(['A坐标X','A坐标Y','A坐标Z','A角度A','B坐标X','B坐标Y','B坐标Z','B角度A','状态'])
         else:
-            self.tableView.setColumnCount(4)
-            self.tableView.setColumnWidth(0, 150)
-            self.tableView.setColumnWidth(1, 150)
-            self.tableView.setColumnWidth(2, 150)
-            self.tableView.setColumnWidth(3, 150)
-            self.tableView.setHorizontalHeaderLabels(['AX坐标', 'AY坐标', 'BX坐标', 'BY坐标'])
+            self.tableView.setColumnCount(8)
+            # self.tableView.setColumnWidth(0, 150)
+            # self.tableView.setColumnWidth(1, 150)
+            # self.tableView.setColumnWidth(2, 150)
+            # self.tableView.setColumnWidth(3, 150)
+            self.tableView.setHorizontalHeaderLabels(['A坐标X','A坐标Y','A坐标Z','A角度A','B坐标X','B坐标Y','B坐标Z','B角度A'])
 
 
     def showdialog(self, t):
