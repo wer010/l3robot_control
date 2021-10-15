@@ -129,6 +129,13 @@ class Ui_Dialog(object):
 
         self.lineEdit_cpos = QLineEdit(self.groupBox)
         self.gridLayout.addWidget(self.lineEdit_cpos)
+
+
+        self.label_offset = QtWidgets.QLabel(self.groupBox)
+        self.label_offset.setText('偏移量')
+        self.gridLayout.addWidget(self.label_offset)
+        self.lineEdit_offset = QLineEdit(self.groupBox)
+        self.gridLayout.addWidget(self.lineEdit_offset)
         # ##################grid view end
 
         self.verticalLayout.addWidget(self.groupBox)
@@ -138,6 +145,8 @@ class Ui_Dialog(object):
         self.label_status = QtWidgets.QLabel(Dialog)
         self.label_status.setObjectName("label_status")
         self.verticalLayout.addWidget(self.label_status)
+
+        # draw the table
         self.tableView = QtWidgets.QTableWidget(Dialog)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -202,10 +211,6 @@ class Ui_Dialog(object):
                 self.tableView.setItem(self.tableView.rowCount()-1,0,QTableWidgetItem('Total number {}'.format(self.counta)))
                 self.tableView.setItem(self.tableView.rowCount()-1,1,QTableWidgetItem('Current done number {}'.format(int(self.i))))
 
-
-
-
-
     def loadFileB(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
@@ -223,8 +228,6 @@ class Ui_Dialog(object):
                 self.countb = int(positionb[-1,0])*int(positionb[-1,1])
                 self.tableView.setItem(self.tableView.rowCount()-1,2,QTableWidgetItem('Total number {}'.format(self.countb)))
                 self.tableView.setItem(self.tableView.rowCount()-1,3,QTableWidgetItem('Current done number {}'.format(int(self.i))))
-
-
 
     def connect2controller(self):
         ip = self.lineEdit_ipaddress.text()
@@ -262,7 +265,6 @@ class Ui_Dialog(object):
             self.msgsend(-1)
             self.msgsend(99)
             self.label_status.setText('All Done')
-
 
     def msgsend(self,s):
         if self.isPause != True:
@@ -305,9 +307,6 @@ class Ui_Dialog(object):
                 self.showdialog("Error Msg")
             self.q.put(a)
 
-
-
-
     def begin(self):        #开始往队列里加消息，子线程收到消息就传到下位机
         if hasattr(self,'client'):
             self.client.start()
@@ -323,14 +322,17 @@ class Ui_Dialog(object):
         else:
             self.showdialog("Connect to device first")
 
-
     def posmsg_init(self,i):
-        a = 'POS {} {} {} {} {} {} {} {}'.format(self.tableView.item(i, 0).text(),
-                                                 self.tableView.item(i, 1).text(),
+        res = self.lineEdit_offset.text().split()
+        if len(res)==4:
+            ax,ay,bx,by = res
+
+        a = 'POS {} {} {} {} {} {} {} {}'.format(float(self.tableView.item(i, 0).text()) + float(ax),
+                                                 float(self.tableView.item(i, 1).text())+ float(ay),
                                                  self.tableView.item(i, 2).text(),
                                                  self.tableView.item(i, 3).text(),
-                                                 self.tableView.item(i, 4).text(),
-                                                 self.tableView.item(i, 5).text(),
+                                                 float(self.tableView.item(i, 4).text())+ float(bx),
+                                                 float(self.tableView.item(i, 5).text())+ float(by),
                                                  self.tableView.item(i, 6).text(),
                                                  self.tableView.item(i, 7).text())
         return a
@@ -356,7 +358,6 @@ class Ui_Dialog(object):
             # self.tableView.setColumnWidth(2, 150)
             # self.tableView.setColumnWidth(3, 150)
             self.tableView.setHorizontalHeaderLabels(['A坐标X','A坐标Y','A坐标Z','A角度A','B坐标X','B坐标Y','B坐标Z','B角度A'])
-
 
     def showdialog(self, t):
         msg = QMessageBox()
