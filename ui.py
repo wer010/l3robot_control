@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import QComboBox,QMessageBox,QTableWidgetItem,QCheckBox,QMa
 import excel_read
 import cmd_send
 import queue
+import time
+
 
 class Ui_Dialog(object):
     q = queue.Queue(0)
@@ -136,6 +138,14 @@ class Ui_Dialog(object):
         self.gridLayout.addWidget(self.label_offset)
         self.lineEdit_offset = QLineEdit(self.groupBox)
         self.gridLayout.addWidget(self.lineEdit_offset)
+
+        self.label_index = QtWidgets.QLabel(self.groupBox)
+        self.label_index.setText('当前序号')
+        self.gridLayout.addWidget(self.label_index)
+        self.lineEdit_index = QLineEdit(self.groupBox)
+        self.lineEdit_index.setValidator(QtGui.QIntValidator())
+        self.lineEdit_index.setText('0')
+        self.gridLayout.addWidget(self.lineEdit_index)
         # ##################grid view end
 
         self.verticalLayout.addWidget(self.groupBox)
@@ -192,7 +202,6 @@ class Ui_Dialog(object):
     def changecb1(self):
         self.lineEdit_cpos.setEnabled(self.checkbox_gotoc.isChecked())
 
-
     def loadFileA(self):
         file_name,_ = QFileDialog.getOpenFileName(self,'打开文件',"./","Excel files(*.xls)")
         self.label_status.setText(file_name)
@@ -233,6 +242,8 @@ class Ui_Dialog(object):
         ip = self.lineEdit_ipaddress.text()
         port = self.lineEdit.text()
         self.client = cmd_send.client_thread(self.q, ip, port)
+        if self.client.inisock()==0:
+            self.showdialog("连接成功")
 
     def pause(self):
         if self.isPause == True:
@@ -248,36 +259,38 @@ class Ui_Dialog(object):
     # 子线程消息接收处理
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Put OK\r\n' and self.i < min(self.counta, self.countb):
-            if self.combobox.currentIndex()==0:
-                self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
-                self.msgsend(0)
+        if s=='Put OK\r\n':
+            if ((self.i+1) < min(self.counta, self.countb)):
+                self.i +=1
+                if self.combobox.currentIndex()==0:
+                    self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+                    self.send_pos()
+                else:
+                    self.tableView.setItem(self.tableView.rowCount() - 1, 1,
+                                           QTableWidgetItem('Current done number {}'.format(int(self.i))))
+                    self.send_plt()
             else:
-                self.tableView.setItem(self.tableView.rowCount() - 1, 1,
-                                       QTableWidgetItem('Current done number {}'.format(int(self.i))))
-                self.msgsend(1)
-        elif self.i == min(self.counta, self.countb):
-            if self.combobox.currentIndex()==0:
-                self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
-            else:
-                self.tableView.setItem(self.tableView.rowCount() - 1, 1,
-                                       QTableWidgetItem('Current done number {}'.format(int(self.i))))
-            self.msgsend(-1)
-            self.msgsend(99)
-            self.label_status.setText('All Done')
+                if self.combobox.currentIndex()==0:
+                    self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+                else:
+                    self.tableView.setItem(self.tableView.rowCount() - 1, 1,
+                                           QTableWidgetItem('Current done number {}'.format(int(self.i))))
+                self.msgsend('HOME')
+                self.label_status.setText('All Done')
 
     def msgsend(self,s):
-        if self.isPause != True:
-            if s==-1:
-                a = 'HOME'
-            elif s==0:        #位置模式
-                a = self.posmsg_init(self.i)
-                self.i = self.i + 1
-            elif s==1:      #托盘模式
-                a = self.pltmsg_init(self.i+1)
-                self.i = self.i + 1
-            elif s==2:      #托盘初始化
-                a = 'Pallet1 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
+        if self.q.empty():
+            self.q.put(s)
+
+
+    def init_robot(self, us_cposition, mode):
+        # us_cposition:bool, 是否使用蘸较工序
+        # mode: int, 0为位置模式，1为托盘模式
+        if us_cposition and self.lineEdit_cpos.text() != None:
+            a = 'CPOS ' + self.lineEdit_cpos.text()
+            self.q.put(a)
+        if mode == 1:
+            a = 'Pallet1 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
                                                                self.tableView.item(0, 1).text(),
                                                                self.tableView.item(1, 0).text(),
                                                                self.tableView.item(1, 1).text(),
@@ -287,8 +300,9 @@ class Ui_Dialog(object):
                                                                self.tableView.item(3, 1).text(),
                                                                self.tableView.item(4, 0).text(),
                                                                self.tableView.item(4, 1).text())
-                self.q.put(a)
-                a = 'Pallet2 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
+            self.msgsend(a)
+            time.sleep(0.2)
+            a = 'Pallet2 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
                                                                self.tableView.item(0, 3).text(),
                                                                self.tableView.item(1, 2).text(),
                                                                self.tableView.item(1, 3).text(),
@@ -298,34 +312,40 @@ class Ui_Dialog(object):
                                                                self.tableView.item(3, 3).text(),
                                                                self.tableView.item(4, 2).text(),
                                                                self.tableView.item(4, 3).text())
+            self.msgsend(a)
+        return
 
-            elif s==3:
-                a='CPOS '+ self.lineEdit_cpos.text()
-            elif s==99:
-                a = 'QUIT'
-            else:
-                self.showdialog("Error Msg")
-            self.q.put(a)
+
+
+    def send_pos(self):
+        a = self.posmsg_init(self.i)
+        self.msgsend(a)
+        return
+
+    def send_plt(self):
+        a = self.pltmsg_init(self.i+1)
+        self.msgsend(a)
 
     def begin(self):        #开始往队列里加消息，子线程收到消息就传到下位机
         if hasattr(self,'client'):
             self.client.start()
             self.client.recv_msg.connect(self.msgrecv)
-            if self.checkbox_gotoc.isChecked() and self.lineEdit_cpos.text() != None:
-                self.msgsend(3)
-            self.i = 0
+            self.init_robot(self.checkbox_gotoc.isChecked(), mode = self.combobox.currentIndex())
+
+
+            self.i = int(self.lineEdit_index.text())
             if self.combobox.currentIndex()==0:
-                self.msgsend(0)
+                self.send_pos()
             else:
-                self.msgsend(2)
-                self.msgsend(1)
+                self.send_plt()
         else:
             self.showdialog("Connect to device first")
 
     def posmsg_init(self,i):
+        ax, ay, bx, by = [0, 0, 0, 0]
         res = self.lineEdit_offset.text().split()
         if len(res)==4:
-            ax,ay,bx,by = res
+            ax, ay, bx, by = res
 
         a = 'POS {} {} {} {} {} {} {} {}'.format(float(self.tableView.item(i, 0).text()) + float(ax),
                                                  float(self.tableView.item(i, 1).text())+ float(ay),
