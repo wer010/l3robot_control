@@ -250,6 +250,7 @@ class Ui_Dialog(object):
             self.isPause = False
             self.pushButton_pause.setText('暂停')
             if hasattr(self, 'i'):
+                self.i = int(self.lineEdit_index.text()) - 1
                 self.msgrecv('Put OK\r\n')
         else:
             self.isPause = True
@@ -334,7 +335,7 @@ class Ui_Dialog(object):
             self.init_robot(self.checkbox_gotoc.isChecked(), mode = self.combobox.currentIndex())
 
 
-            self.i = int(self.lineEdit_index.text()-1)
+            self.i = int(self.lineEdit_index.text())-1
             if self.combobox.currentIndex()==0:
                 self.send_pos()
             else:
