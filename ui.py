@@ -250,7 +250,7 @@ class Ui_Dialog(object):
             self.isPause = False
             self.pushButton_pause.setText('暂停')
             if hasattr(self, 'i'):
-                self.i = int(self.lineEdit_index.text()) - 1
+                self.i = int(self.lineEdit_index.text()) - 2
                 self.msgrecv('Put OK\r\n')
         else:
             self.isPause = True
