@@ -144,7 +144,7 @@ class Ui_Dialog(object):
         self.gridLayout.addWidget(self.label_index)
         self.lineEdit_index = QLineEdit(self.groupBox)
         self.lineEdit_index.setValidator(QtGui.QIntValidator())
-        self.lineEdit_index.setText('0')
+        self.lineEdit_index.setText('1')
         self.gridLayout.addWidget(self.lineEdit_index)
         # ##################grid view end
 
@@ -259,36 +259,38 @@ class Ui_Dialog(object):
     # 子线程消息接收处理
     def msgrecv(self,s):
         self.label_status.setText(s)
-        if s=='Put OK\r\n':
-            if ((self.i+1) < min(self.counta, self.countb)):
-                self.i +=1
-                if self.combobox.currentIndex()==0:
-                    self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
-                    self.send_pos()
-                else:
-                    self.tableView.setItem(self.tableView.rowCount() - 1, 1,
-                                           QTableWidgetItem('Current done number {}'.format(int(self.i))))
-                    self.send_plt()
+        if 'Put OK' in s:
+            # 放好一个，接着放下一个
+            if self.combobox.currentIndex() == 0:
+                self.tableView.setItem(self.i, 8, QTableWidgetItem('OK'))
             else:
-                if self.combobox.currentIndex()==0:
-                    self.tableView.setItem(self.i-1, 4, QTableWidgetItem('OK'))
+                self.tableView.setItem(self.tableView.rowCount() - 1, 1,
+                                       QTableWidgetItem('Current done number {}'.format(int(self.i))))
+            if (not self.isPause):
+                if ((self.i+1) < min(self.counta, self.countb)):
+                    self.i +=1
+                    self.lineEdit_index.setText(str(self.i+1))
+                    if self.combobox.currentIndex()==0:
+                        self.send_pos()
+                    else:
+                        self.send_plt()
                 else:
-                    self.tableView.setItem(self.tableView.rowCount() - 1, 1,
-                                           QTableWidgetItem('Current done number {}'.format(int(self.i))))
-                self.msgsend('HOME')
-                self.label_status.setText('All Done')
+                    self.msgsend('HOME')
+                    self.label_status.setText('All Done')
+                    self.msgsend('QUIT')
 
     def msgsend(self,s):
         if self.q.empty():
             self.q.put(s)
+        time.sleep(0.2)
 
 
     def init_robot(self, us_cposition, mode):
-        # us_cposition:bool, 是否使用蘸较工序
+        # us_cposition:bool, 是否使用蘸胶工序
         # mode: int, 0为位置模式，1为托盘模式
         if us_cposition and self.lineEdit_cpos.text() != None:
             a = 'CPOS ' + self.lineEdit_cpos.text()
-            self.q.put(a)
+            self.msgsend(a)
         if mode == 1:
             a = 'Pallet1 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 0).text(),
                                                                self.tableView.item(0, 1).text(),
@@ -301,7 +303,6 @@ class Ui_Dialog(object):
                                                                self.tableView.item(4, 0).text(),
                                                                self.tableView.item(4, 1).text())
             self.msgsend(a)
-            time.sleep(0.2)
             a = 'Pallet2 {} {} {} {} {} {} {} {} {} {}'.format(self.tableView.item(0, 2).text(),
                                                                self.tableView.item(0, 3).text(),
                                                                self.tableView.item(1, 2).text(),
@@ -333,7 +334,7 @@ class Ui_Dialog(object):
             self.init_robot(self.checkbox_gotoc.isChecked(), mode = self.combobox.currentIndex())
 
 
-            self.i = int(self.lineEdit_index.text())
+            self.i = int(self.lineEdit_index.text()-1)
             if self.combobox.currentIndex()==0:
                 self.send_pos()
             else:
